@@ -5,6 +5,8 @@ import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from "re
 import { submitScan, type IdentificationResult } from "../api/client";
 import Button from "../components/Button";
 
+const loupeLogo = require("../../assets/LoupeLogoMark.png");
+
 type Props = {
   onIdentified: (result: IdentificationResult) => void;
 };
@@ -41,7 +43,12 @@ export default function CameraScreen({ onIdentified }: Props) {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.brand}>Loupe</Text>
+        <View style={styles.brandRow}>
+          <View style={styles.logoTile}>
+            <Image resizeMode="contain" source={loupeLogo} style={styles.logoMark} />
+          </View>
+          <Text style={styles.brand}>Loupe</Text>
+        </View>
         <Text style={styles.title}>Item value intelligence from one photo.</Text>
       </View>
       <View style={styles.preview}>
@@ -70,6 +77,23 @@ const styles = StyleSheet.create({
   header: {
     gap: 8,
     paddingTop: 18,
+  },
+  brandRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 12,
+  },
+  logoTile: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 56,
+    height: 56,
+    borderRadius: 8,
+    backgroundColor: "#161616",
+  },
+  logoMark: {
+    width: 44,
+    height: 44,
   },
   brand: {
     color: "#161616",
@@ -110,4 +134,3 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 });
-

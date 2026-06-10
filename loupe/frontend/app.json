@@ -8,6 +8,11 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "splash": {
+      "image": "./assets/LoupeLogoMark.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#242424"
+    },
     "ios": {
       "supportsTablet": true
     },
