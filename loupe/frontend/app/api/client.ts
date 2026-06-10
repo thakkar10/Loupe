@@ -63,7 +63,15 @@ export type ValuationResult = {
 };
 
 async function readJson<T>(res: Response): Promise<T> {
-  const body = await res.json();
+  const raw = await res.text();
+  let body: any = null;
+
+  try {
+    body = raw ? JSON.parse(raw) : null;
+  } catch {
+    throw new Error(raw || `Request failed with status ${res.status}`);
+  }
+
   if (!res.ok) {
     throw new Error(body?.detail?.message ?? body?.detail ?? "Request failed");
   }

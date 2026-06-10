@@ -4,7 +4,7 @@ import json
 import os
 from io import BytesIO
 
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, OpenAIError
 from PIL import Image, ImageOps
 
 logger = logging.getLogger(__name__)
@@ -28,6 +28,10 @@ Analyze the image and return ONLY a JSON object with these fields:
 - ambiguity_notes: string or null
 Return only valid JSON. No explanation, no markdown.
 """
+
+
+class IdentificationError(RuntimeError):
+    pass
 
 
 def _int_env(name: str, default: int) -> int:
@@ -101,25 +105,34 @@ async def identify_item(image_bytes: bytes) -> dict:
     )
 
     client = AsyncOpenAI()
-    response = await client.chat.completions.create(
-        model=model,
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:{mime_type};base64,{b64}",
-                            "detail": detail,
-                        },
-                    }
-                ],
-            },
-        ],
-        max_tokens=max_tokens,
-    )
+    try:
+        response = await client.chat.completions.create(
+            model=model,
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{mime_type};base64,{b64}",
+                                "detail": detail,
+                            },
+                        }
+                    ],
+                },
+            ],
+            max_tokens=max_tokens,
+        )
+    except OpenAIError as exc:
+        logger.exception("OpenAI vision identification failed")
+        raise IdentificationError(f"OpenAI identification failed: {exc}") from exc
+
     content = response.choices[0].message.content or "{}"
-    return json.loads(content)
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError as exc:
+        logger.exception("OpenAI returned non-JSON identification content: %r", content[:200])
+        raise IdentificationError("OpenAI returned a non-JSON identification response") from exc

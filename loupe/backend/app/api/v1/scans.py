@@ -5,7 +5,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from app.categories import get_handler
 from app.models.schemas import FollowUpAnswers, IdentificationResult, ValuationResult
 from app.pricing.engine import calculate_valuation
-from app.vision.identifier import identify_item
+from app.vision.identifier import IdentificationError, identify_item
 
 router = APIRouter(tags=["scans"])
 scan_store: dict[str, dict] = {}
@@ -23,7 +23,13 @@ def _normalize_known_fields(vision_result: dict) -> dict:
 @router.post("/scans", response_model=IdentificationResult)
 async def create_scan(file: UploadFile = File(...)):
     image_bytes = await file.read()
-    vision_result = await identify_item(image_bytes)
+    try:
+        vision_result = await identify_item(image_bytes)
+    except IdentificationError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail={"message": str(exc), "source": "openai"},
+        ) from exc
 
     try:
         handler = get_handler(vision_result["category"])
@@ -110,4 +116,3 @@ async def get_history(scan_id: UUID):
         raise HTTPException(status_code=404, detail="Scan not found")
     valuation = scan.get("valuation") or {}
     return valuation.get("historical", [])
-
