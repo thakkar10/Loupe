@@ -9,7 +9,7 @@ from PIL import Image, ImageOps
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_VISION_MODEL = "gpt-4.1-mini"
+DEFAULT_VISION_MODEL = "gpt-4o-mini"
 DEFAULT_VISION_DETAIL = "low"
 DEFAULT_MAX_TOKENS = 400
 DEFAULT_MAX_IMAGE_EDGE = 768
