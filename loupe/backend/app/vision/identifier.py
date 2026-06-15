@@ -14,6 +14,8 @@ DEFAULT_VISION_DETAIL = "low"
 DEFAULT_MAX_TOKENS = 400
 DEFAULT_MAX_IMAGE_EDGE = 768
 DEFAULT_IMAGE_QUALITY = 80
+DEFAULT_OPENAI_TIMEOUT_SECONDS = 30
+DEFAULT_OPENAI_MAX_RETRIES = 1
 
 SYSTEM_PROMPT = """
 You are an item identification assistant for Loupe, a price intelligence app.
@@ -94,6 +96,8 @@ async def identify_item(image_bytes: bytes) -> dict:
     model = os.getenv("OPENAI_VISION_MODEL", DEFAULT_VISION_MODEL)
     detail = os.getenv("OPENAI_VISION_DETAIL", DEFAULT_VISION_DETAIL)
     max_tokens = _int_env("OPENAI_VISION_MAX_TOKENS", DEFAULT_MAX_TOKENS)
+    timeout_seconds = _int_env("OPENAI_TIMEOUT_SECONDS", DEFAULT_OPENAI_TIMEOUT_SECONDS)
+    max_retries = _int_env("OPENAI_MAX_RETRIES", DEFAULT_OPENAI_MAX_RETRIES)
     prepared_image, mime_type = _prepare_image_for_vision(image_bytes)
     b64 = base64.b64encode(prepared_image).decode("utf-8")
 
@@ -104,7 +108,7 @@ async def identify_item(image_bytes: bytes) -> dict:
         max_tokens,
     )
 
-    client = AsyncOpenAI()
+    client = AsyncOpenAI(timeout=timeout_seconds, max_retries=max_retries)
     try:
         response = await client.chat.completions.create(
             model=model,

@@ -1,4 +1,5 @@
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+const REQUEST_TIMEOUT_MS = Number(process.env.EXPO_PUBLIC_API_TIMEOUT_MS ?? 120000);
 
 export type Question = {
   field_key: string;
@@ -78,6 +79,21 @@ async function readJson<T>(res: Response): Promise<T> {
   return body as T;
 }
 
+async function request(path: string, init?: RequestInit): Promise<Response> {
+  const url = `${BASE_URL}${path}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Network request failed";
+    throw new Error(`Could not reach Loupe backend at ${BASE_URL}. ${message}`);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function submitScan(imageUri: string): Promise<IdentificationResult> {
   const formData = new FormData();
   formData.append("file", {
@@ -86,7 +102,7 @@ export async function submitScan(imageUri: string): Promise<IdentificationResult
     type: "image/jpeg",
   } as any);
 
-  const res = await fetch(`${BASE_URL}/scans`, { method: "POST", body: formData });
+  const res = await request("/scans", { method: "POST", body: formData });
   return readJson<IdentificationResult>(res);
 }
 
@@ -94,7 +110,7 @@ export async function submitAnswers(
   scanId: string,
   answers: Record<string, unknown>,
 ): Promise<ValuationResult> {
-  const res = await fetch(`${BASE_URL}/scans/${scanId}/answers`, {
+  const res = await request(`/scans/${scanId}/answers`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ answers }),
@@ -103,11 +119,11 @@ export async function submitAnswers(
 }
 
 export async function getScan(scanId: string) {
-  const res = await fetch(`${BASE_URL}/scans/${scanId}`);
+  const res = await request(`/scans/${scanId}`);
   return readJson(res);
 }
 
 export async function getHistory(scanId: string): Promise<Array<{ date: string; price_mid: number }>> {
-  const res = await fetch(`${BASE_URL}/scans/${scanId}/history`);
+  const res = await request(`/scans/${scanId}/history`);
   return readJson<Array<{ date: string; price_mid: number }>>(res);
 }

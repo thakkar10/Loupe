@@ -20,3 +20,12 @@ app.add_middleware(
 
 app.include_router(scans.router, prefix="/api/v1")
 app.include_router(categories.router, prefix="/api/v1")
+
+
+@app.get("/api/v1/health")
+async def health_check():
+    return {
+        "status": "ok",
+        "openai_configured": bool(os.getenv("OPENAI_API_KEY")),
+        "vision_model": os.getenv("OPENAI_VISION_MODEL", "gpt-4o-mini"),
+    }
